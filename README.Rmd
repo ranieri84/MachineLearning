@@ -1,0 +1,90 @@
+---
+title: "Prediction Assignment - Exercise Type"
+author: "Vinicius Ranieri"
+date: "8/16/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+
+It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the "quantified self" movement -- a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
+
+The objective is to predict the exercise type A,B,C,D or E
+```{r cars}
+summary(cars)
+```
+
+## Data Processing
+
+There are 2 dataset one will be used to train the model and the other to validate it.
+
+The training data for this project are available here:
+[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)
+
+The test data are available here:
+[https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv](https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv)
+
+```{r}
+training <- read.csv("pml-training.csv")
+testing <- read.csv("pml-testing.csv")
+
+#Remove columns that have only NA values in the  testing dataset. Do it for both test and training datasets
+training<-training[colSums(is.na(testing)) == 0]
+testing<-testing[colSums(is.na(testing)) == 0]
+
+clean_train<-training[-c(1,3,4,5,6,7)]
+clean_test<-testing[-c(1,3,4,5,6,7)]
+
+dim(training)
+```
+There are 19622 observations with 60 variables. Let´s take a look into the prediction  variable distribution
+```{r}
+library(ggplot2)
+ggplot(training, aes(x=factor(classe),y=..count..,fill= classe))+
+  geom_bar()+labs(title="Classes distribution") 
+
+```
+It is possible to see that there is enough data to predict all the classe data as they are more than 10 times the number of variables, and also enough data to perform cross validation.
+To simplify the model variables, the ones that have almost no variance will be removed. This is done with the nearZeroVar function. 
+
+```{r}
+library(caret)
+nvz <- nearZeroVar(training)
+
+nvz
+```
+All the columns have significant variance
+
+## Data Spliting and Cross Validation
+
+The folds method will be used with 5 Folds for cross validation. The radomforest method will be used to train the model.
+```{r}
+set.seed(1234)
+folds<-createFolds(y=clean_train$classe,k=5)
+myControl <- trainControl(method = "cv",
+                          number = 5,
+                          savePredictions = TRUE,
+                          index = folds,
+                          summaryFunction = defaultSummary) # just use accuracy to determine best model
+fit1 <- train(classe ~ ., data = clean_train,method="rf",trControl = myControl)
+fit1
+```
+The model has a very good accuracy of 99.9% in our cross validation test. Let's check against the test data.
+
+
+
+```{r}
+p <- predict(fit1, clean_train, type = "raw")
+confusionMatrix(p, factor(clean_train$classe))
+```
+```{r}
+quiz.p <- predict(fit1, clean_test, type = "raw")
+quiz.p
+```
