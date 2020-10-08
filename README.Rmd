@@ -3,8 +3,8 @@ title: "Prediction Assignment - Exercise Type"
 author: "Vinicius Ranieri"
 date: "8/16/2020"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
